@@ -1,14 +1,31 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+import models
+import database
 
-# Создаем экземпляр приложения
+# Создаем таблицы в базе данных при запуске
+models.Base.metadata.create_all(bind=database.engine)
+
 app = FastAPI()
 
-# Создаем наш первый GET-эндпоинт по адресу /
-@app.get("/")
-def read_root():
-    return {"message": "Привет, мир! Мой бэкенд на FastAPI работает!"}
+# Эндпоинт для создания пользователя в базе данных (POST-запрос)
+@app.post("/users/")
+def create_user(username: str, db: Session = Depends(database.get_db)):
+    # Проверяем, нет ли уже такого пользователя
+    db_user = db.query(models.User).filter(models.User.username == username).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    
+    # Создаем нового пользователя через SQLAlchemy модель
+    new_user = models.User(username=username)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return {"id": new_user.id, "username": new_user.username, "status": "created"}
 
-# Создаем еще один эндпоинт для примера с параметром
-@app.get("/users/{user_id}")
-def get_user(user_id: int):
-    return {"user_id": user_id, "status": "active"}
+# Эндпоинт для получения списка всех пользователей из базы
+@app.get("/users/")
+def get_users(db: Session = Depends(database.get_db)):
+    users = db.query(models.User).all()
+    return users
