@@ -58,3 +58,22 @@ def delete_user(user_id: int, db: Session = Depends(database.get_db)):
     db.commit()
     
     return {"message": "User deleted successfully"}
+
+# Эндпоинт для обновления данных пользователя по ID
+@app.put("/users/{user_id}", response_model=schemas.UserResponse)
+def update_user(user_id: int, user_update: schemas.UserUpdate, db: Session = Depends(database.get_db)):
+    # 1. Ищем пользователя в базе
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    
+    # 2. Если не нашли — возвращаем 404
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # 3. Обновляем поле username данными, которые прислал клиент
+    db_user.username = user_update.username
+    
+    # 4. Сохраняем изменения в базе
+    db.commit()
+    db.refresh(db_user)
+    
+    return db_user
