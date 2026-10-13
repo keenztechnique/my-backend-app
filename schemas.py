@@ -1,16 +1,14 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 
-# Схема, которую мы ждем ОТ клиента при создании пользователя
 class UserCreate(BaseModel):
-    username: str
+    # Добавляем ограничение: имя должно быть не короче 3 символов
+    username: str = Field(..., min_length=3, description="Имя пользователя должно содержать минимум 3 символа")
 
-# Схема, которую мы возвращаем КЛИЕНТУ (уже содержит ID и дату из базы)
 class UserResponse(BaseModel):
     id: int
     username: str
     registered_at: datetime
 
     class Config:
-        # Эта настройка говорит Pydantic: «Умей читать данные, даже если они приходят из ORM-моделей SQLAlchemy, а не просто из словарей»
         from_attributes = True
