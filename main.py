@@ -77,3 +77,23 @@ def update_user(user_id: int, user_update: schemas.UserUpdate, db: Session = Dep
     db.refresh(db_user)
     
     return db_user
+
+# Эндпоинт для создания поста конкретным пользователем
+@app.post("/users/{user_id}/posts/", response_model=schemas.PostResponse)
+def create_post_for_user(user_id: int, post: schemas.PostCreate, db: Session = Depends(database.get_db)):
+    # Проверяем, существует ли пользователь
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Создаем объект поста, привязывая его к user_id
+    db_post = models.Post(**post.dict(), user_id=user_id)
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
+    return db_post
+
+# Эндпоинт для получения всех постов
+@app.get("/posts/", response_model=list[schemas.PostResponse])
+def get_posts(db: Session = Depends(database.get_db)):
+    return db.query(models.Post).all()

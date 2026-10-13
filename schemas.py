@@ -15,3 +15,18 @@ class UserResponse(BaseModel):
 
 class UserUpdate(BaseModel):
     username: str
+
+# Схема для создания поста
+class PostCreate(BaseModel):
+    title: str
+    content: str
+
+# Схема для отображения поста клиенту
+class PostResponse(BaseModel):
+    id: int
+    title: str
+    content: str
+    user_id: int
+
+    class Config:
+        from_attributes = True
