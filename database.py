@@ -1,21 +1,18 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from config import settings  # <--- Импортируем наши настройки
 
-# Для старта используем локальную SQLite базу данных (она создаст файл sql_app.db)
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
+# Используем URL из конфига
+SQLALCHEMY_DATABASE_URL = settings.database_url
 
-# Движок базы данных
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
-
-# Фабрика сессий для работы с БД
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Базовый класс для наших моделей
 Base = declarative_base()
 
-# Зависимость (Dependency) для получения сессии БД в эндпоинтах
 def get_db():
     db = SessionLocal()
     try:
