@@ -1,53 +1,56 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, DateTime
-from sqlalchemy.orm import relationship
-from datetime import datetime
-from database import Base 
+from datetime import datetime, timezone
+from sqlalchemy import String, ForeignKey, UniqueConstraint, DateTime, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from database import Base
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = {'extend_existing': True}
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    registered_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    
+    # Рекомендуется переносить создание даты на сторону самой БД через server_default
+    registered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), 
+        server_default=func.now()
+    )
 
-    posts = relationship("Post", back_populates="owner", cascade="all, delete-orphan")
+    # Строгая типизация связей
+    posts: Mapped[list["Post"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
 
 
 class Post(Base):
     __tablename__ = "posts"
-    __table_args__ = {'extend_existing': True}
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-    content = Column(String)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(255), index=True)
+    content: Mapped[str] = mapped_column(String)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     
-    user_id = Column(Integer, ForeignKey("users.id"))
-    owner = relationship("User", back_populates="posts")
+    owner: Mapped["User"] = relationship(back_populates="posts")
+
 
 class Comment(Base):
     __tablename__ = "comments"
 
-    id = Column(Integer, primary_key=True, index=True)
-    text = Column(String, nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"))
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    text: Mapped[str] = mapped_column(String)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"))
 
-    # Связи для удобного доступа к данным
-    user = relationship("User")
-    post = relationship("Post")
+    user: Mapped["User"] = relationship()
+    post: Mapped["Post"] = relationship()
+
 
 class Like(Base):
     __tablename__ = "likes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"))
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"))
 
     __table_args__ = (
         UniqueConstraint('user_id', 'post_id', name='unique_post_like'),
     )
-
-    user = relationship("User")
-    post = relationship("Post")

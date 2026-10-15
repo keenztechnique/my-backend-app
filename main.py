@@ -1,25 +1,21 @@
 from fastapi import FastAPI
-import models
-import database
-from routers import users, posts, auth
-from routers import auth, users, posts, comments
+from database import engine, Base
+import models  
+# Чистые и понятные импорты без дублирования
 from routers import auth, users, posts, comments, likes
-
-# Создаем таблицы в базе данных при запуске
-#models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(
     title="My Professional Backend API",
     version="2.0.0"
 )
 
-# Подключаем роутеры
+# Подключаем ВСЕ роутеры по очереди
 app.include_router(auth.router)
 app.include_router(users.router)
-app.include_router(posts.router)
+app.include_router(posts.router)     # <-- Убедись, что эта строка активна и не закомментирована
 app.include_router(comments.router)
 app.include_router(likes.router)
 
-@app.get("/")
+@app.get("/", tags=["Root"])
 def root():
     return {"message": "Welcome to the professional FastAPI backend!"}

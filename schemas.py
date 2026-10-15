@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
+from typing import Optional
 
 class UserCreate(BaseModel):
     # Добавляем ограничение: имя должно быть не короче 3 символов
@@ -9,10 +10,9 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     id: int
     username: str
-    registered_at: datetime
-
-    class Config:
-        from_attributes = True
+    avatar_url: str | None = None
+    
+    model_config = ConfigDict(from_attributes=True)
 
 class UserUpdate(BaseModel):
     username: str
@@ -29,8 +29,7 @@ class PostResponse(BaseModel):
     content: str
     user_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):
     access_token: str
@@ -48,11 +47,9 @@ class CommentResponse(BaseModel):
     user_id: int
     post_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class LikeResponse(BaseModel):
     message: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

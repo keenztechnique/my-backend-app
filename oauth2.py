@@ -1,14 +1,16 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select  # Импортируем новый select
 import database
 import models
 from config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
+# Функция становится async def, тип сессии меняется на AsyncSession
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(database.get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -22,7 +24,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     except JWTError:
         raise credentials_exception
         
-    user = db.query(models.User).filter(models.User.username == username).first()
+    # Стиль 2.0: выполняем запрос через await db.execute(select(...))
+    query = select(models.User).where(models.User.username == username)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()  # Безопасное получение одной записи или None
+    
     if user is None:
         raise credentials_exception
     return user
